@@ -1,26 +1,33 @@
-import { _decorator, Component, Node, ImageAsset, assetManager, TextAsset, SpriteFrame, Label } from 'cc';
+import { _decorator, Component, Node, ImageAsset, tween, TextAsset, SpriteFrame, Label } from 'cc';
 const { ccclass, property } = _decorator;
 
 import dat from "../Scripts/dat.gui.min.js";
 import { BitmapFont } from 'cc';
 const gui = new dat.GUI();
-const FontManager = gui.addFolder('Font Manager');
+const fontManager = gui.addFolder('Font Manager');
 
 @ccclass('LoadFont')
 export class LoadFont extends Component {
     @property({ type: Node }) importBtn: Node = null;
     @property({ type: Node }) labelHolder: Node = null;
-    @property({ type: Label }) demoLabel: Label = null;
 
     private fntFiles: File[] = [];
     private pngFiles: File[] = [];
     private fontNames: string[] = [];
     private spriteFrames: SpriteFrame[] = [];
     private textAssets: TextAsset[] = [];
+    private labels: Label[] = [];
+
+    fontIndex: number = 0;
+    currentLabelNode: Label = null;
+    startValue: number = 0;
+    endValue: number = 0;
+    duration: number = 0;
+
+    tweenCountingNumber = null;
 
     start() {
         this.setupDatGui();
-        console.log(this.demoLabel);
     }
 
     setupDatGui() {
@@ -29,12 +36,40 @@ export class LoadFont extends Component {
         gui.domElement.style.left = '-50px';
         gui.domElement.style.zIndex = '1000';
 
-        const button = {
-            message: 'Button clicked',
-            function: () => {
+        const inputData = {
+            startCountingValue: "",
+            endCountingValue: "",
+            countingDuration: "",
+            onChangeStartValue: (value: string) => {
+                if (this.isNumeric(value)) {
+                    inputData.startCountingValue = value;
+                    this.startValue = Number(value);
+                }
+            },
+            onChangeEndValue: (value: string) => {
+                if (this.isNumeric(value)) {
+                    inputData.endCountingValue = value;
+                    this.endValue = Number(value);
+                }
+            },
+            onChangeDuration: (value: string) => {
+                if (this.isNumeric(value)) {
+                    inputData.countingDuration = value;
+                    this.duration = parseInt(value);
+                }
+            },
+            startCounting: () => {
+                this.startCountingNumber();
             }
         }
-        gui.add(button, 'function').name('Remove All Spines');
+        gui.add(inputData, 'startCountingValue').name('Start Value').onChange(inputData.onChangeStartValue);
+        gui.add(inputData, 'endCountingValue').name('End Value').onChange(inputData.onChangeEndValue);
+        gui.add(inputData, 'countingDuration').name('Counting Duration').onChange(inputData.onChangeDuration);
+        gui.add(inputData, 'startCounting').name('Start Counting');
+    }
+
+    isNumeric(text: string): boolean {
+        return /^\d+$/.test(text);
     }
 
     async importFontFolder(): Promise<void> {
@@ -138,9 +173,12 @@ export class LoadFont extends Component {
         const node = new Node('LabelNode');
         const countingNumber = node.addComponent(Label);
         this.labelHolder.addChild(node);
+        countingNumber.string = "";
         countingNumber.font = bitmapFontData;
-        countingNumber.string = "1234";
-        // this.createDatGuiController(skeleton.skeletonData, folderName);
+        this.labels.push(countingNumber);
+
+        this.createDatGuiController(folderName);
+        this.fontIndex++;
     }
 
     async createFntConfig(text: string): Promise<any> {
@@ -204,6 +242,69 @@ export class LoadFont extends Component {
             };
         });
         return Promise.resolve(fontDefDictionary);
+    }
+
+    createDatGuiController(folderName: string) {
+        const fontHolder = fontManager.addFolder(folderName);
+        const fontData = {
+            fontIndex: this.fontIndex,
+            onActiveLabel: () => {
+                this.hideAllLabels();
+                this.labels[fontData.fontIndex].node.active = true;
+                this.currentLabelNode = this.labels[fontData.fontIndex];
+                this.currentLabelNode.string = "0";
+            },
+        };
+        fontHolder.add(fontData, 'onActiveLabel').name('Active');
+    }
+
+    hideAllLabels(): void {
+        if (!this.labels || this.labels.length <= 0) return;
+        this.labels.forEach(label => {
+            label.node.active = false;
+        });
+    }
+
+    startCountingNumber(): void {
+        if (!this.currentLabelNode) return;
+
+        const _target = { value: this.startValue };
+
+        if (this.tweenCountingNumber) {
+            this.tweenCountingNumber.stop();
+        }
+        this.tweenCountingNumber = tween(_target)
+            .to(this.duration, { value: this.endValue }, {
+                progress: (start, end, current, ratio) => {
+                    this.currentLabelNode.string = this.formatMoney(current);
+                    return start + (end - start) * ratio;
+                }
+            })
+            .call(() => {
+                this.currentLabelNode.string = this.formatMoney(this.endValue);
+                this.tweenCountingNumber = null;
+            })
+        this.tweenCountingNumber.start();
+    }
+
+    formatMoney(amount, decimalCount = 0) {
+        if (amount < 0) return "0";
+        // const splitStr = toFixed(amount, decimalCount).split(".");
+        const splitStr = amount.toFixed(decimalCount).split(".");
+
+        let decimal = ',';
+        let thousands = '.';
+    
+        const decimalStr = splitStr[1] || "";
+        const integerArr = splitStr[0].split("");
+        let index = integerArr.length;
+        while ((index -= 3) > 0) {
+            integerArr.splice(index, 0, thousands);
+        }
+        if (decimalStr) {
+            integerArr.push(decimal, decimalStr);
+        }
+        return integerArr.join("");
     }
 }
 
