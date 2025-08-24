@@ -10,6 +10,7 @@ const fontManager = gui.addFolder('Font Manager');
 export class LoadFont extends Component {
     @property({ type: Node }) importBtn: Node = null;
     @property({ type: Node }) labelHolder: Node = null;
+    @property({ type: Node }) totalWinText: Node = null;
 
     private fntFiles: File[] = [];
     private pngFiles: File[] = [];
@@ -26,6 +27,12 @@ export class LoadFont extends Component {
 
     tweenCountingNumber = null;
 
+    onLoad(): void {
+        if (this.labelHolder) {
+            this.labelHolder.active = false;
+        }
+    }
+
     start() {
         this.setupDatGui();
     }
@@ -40,6 +47,11 @@ export class LoadFont extends Component {
             startCountingValue: "",
             endCountingValue: "",
             countingDuration: "",
+            isShowTotalWinText: true,
+            onShowText: (value: boolean) => {
+                inputData.isShowTotalWinText = value;
+                this.totalWinText.active = value;
+            },
             onChangeStartValue: (value: string) => {
                 if (this.isNumeric(value)) {
                     inputData.startCountingValue = value;
@@ -62,6 +74,7 @@ export class LoadFont extends Component {
                 this.startCountingNumber();
             }
         }
+        gui.add(inputData, 'isShowTotalWinText').name('Show Total Win Text').onChange(inputData.onShowText);
         gui.add(inputData, 'startCountingValue').name('Start Value').onChange(inputData.onChangeStartValue);
         gui.add(inputData, 'endCountingValue').name('End Value').onChange(inputData.onChangeEndValue);
         gui.add(inputData, 'countingDuration').name('Counting Duration').onChange(inputData.onChangeDuration);
@@ -84,7 +97,10 @@ export class LoadFont extends Component {
         input.style.bottom = '100px';
         input.style.left = '500px';
         document.body.appendChild(input);
-        this.importBtn.active = false;
+        if (this.importBtn.active) {
+            this.importBtn.active = false;
+            this.labelHolder.active = true;
+        }
 
         setTimeout(() => {
             input.click();
