@@ -20,7 +20,7 @@ export class LoadFont extends Component {
 
     start() {
         this.setupDatGui();
-        console.log(this.demoLabel.font);
+        console.log(this.demoLabel);
     }
 
     setupDatGui() {
@@ -62,9 +62,11 @@ export class LoadFont extends Component {
                 for (let i = 0; i < input.files.length; i++) {
                     const file = input.files[i];
                     if (file.name.endsWith('.fnt')) {
+                        this.fntFiles.push(file);
                         await this.getTextData(file);
                     } else if (file.name.endsWith('.png')) {
                         this.fontNames.push(file.name);
+                        this.pngFiles.push(file);
                         await this.getSpriteFrameData(file);
                     }
                 }
@@ -83,6 +85,7 @@ export class LoadFont extends Component {
                 img.onload = () => {
                     const imageAsset = new ImageAsset(img);
                     const spriteFrame = SpriteFrame.createWithImage(imageAsset);
+                    spriteFrame.ensureMeshData();
                     this.spriteFrames.push(spriteFrame);
                     resolve();
                 }
@@ -106,28 +109,27 @@ export class LoadFont extends Component {
 
     async loadFontsFromFiles(): Promise<void> {
         for (let i = 0; i < this.fontNames.length; i++) {
-            const textAsset = this.textAssets[i];
-            const spriteFrameAsset = this.spriteFrames[i];
             const guiName = this.fontNames[i];
-            const bitmapFontData = await this.loadBitmapFont(textAsset, spriteFrameAsset, i);
-            this.initLabelNode(bitmapFontData, guiName);
+            const textAsset = this.textAssets[i];
+            const pngAsset = this.spriteFrames[i];
+            const bitmapFont = await this.loadBitmapFont(textAsset, pngAsset, i);
+            this.initLabelNode(bitmapFont, guiName);
         }
-    }
-
-    async loadFontRemote(): Promise<void> {
-        return Promise.resolve();
     }
 
     async loadBitmapFont(textAsset: TextAsset, spriteFrame: SpriteFrame, index: number): Promise<BitmapFont> {
         const bitmapFontData = new BitmapFont();
-        bitmapFontData.spriteFrame = spriteFrame;
         const fntConfig = await this.createFntConfig(textAsset.text);
-        fntConfig.atlasName = this.fontNames[index];
+        fntConfig.fontSize = 30;
         const fontDefDictionary = await this.createFontDefDictionary(fntConfig);
+        const fileName = this.fontNames[index].replace(".png", "");
+        bitmapFontData.spriteFrame = spriteFrame;
         bitmapFontData.fntConfig = fntConfig;
+        bitmapFontData.spriteFrame = this.spriteFrames[index];
+        bitmapFontData.spriteFrame.name = fileName;
+        bitmapFontData.fntConfig.atlasName = this.fontNames[index];
         bitmapFontData.fntConfig.fontDefDictionary = fontDefDictionary;
-        bitmapFontData.fontSize = 30;
-        bitmapFontData.name = this.fontNames[index];
+        bitmapFontData.name = fileName;
         bitmapFontData.onLoaded();
         return Promise.resolve(bitmapFontData);
     }
@@ -136,10 +138,8 @@ export class LoadFont extends Component {
         const node = new Node('LabelNode');
         const countingNumber = node.addComponent(Label);
         this.labelHolder.addChild(node);
-        countingNumber.string = "";
         countingNumber.font = bitmapFontData;
         countingNumber.string = "1234";
-        console.log(countingNumber.font);
         // this.createDatGuiController(skeleton.skeletonData, folderName);
     }
 
