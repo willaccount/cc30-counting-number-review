@@ -1,6 +1,10 @@
 import { _decorator, Component, Node, error, UITransform, Layout } from 'cc';
 const { ccclass, property } = _decorator;
 
+import dat from "../Scripts/dat.gui.min.js";
+const gui = new dat.GUI();
+const fontManager = gui.addFolder('Font Manager');
+
 @ccclass('BaseAssetReviewModule')
 export class BaseAssetReviewModule extends Component {
     @property(Node)
@@ -60,13 +64,6 @@ export class BaseAssetReviewModule extends Component {
     protected _removeSpineFromGui(asset: any) {}
 
     protected _initGui() {
-        const lil = (window as any).lil;
-        const GUI = lil && lil.GUI;
-        if (!GUI) {
-            error('[SpinePreview] lil-gui not loaded');
-            return;
-        }
-        const gui = new GUI({ width: 280 });
         gui.domElement.parentElement.style.zIndex = '1000';
         this._rootGui = gui;
 
