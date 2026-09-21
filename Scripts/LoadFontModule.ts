@@ -1,4 +1,4 @@
-import { _decorator, BitmapFont, Texture2D } from 'cc';
+import { _decorator, BitmapFont } from 'cc';
 import BaseLoadAssetModule from './BaseLoadAssetModule';
 const { ccclass } = _decorator;
 

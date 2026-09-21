@@ -1,8 +1,9 @@
 import { _decorator, Component, Node, ImageAsset, tween, TextAsset, SpriteFrame, Label } from 'cc';
 const { ccclass, property } = _decorator;
 
-import dat from "../Scripts/dat.gui.min.js";
+import dat from "../Scripts/Plugin/dat.gui.min.js";
 import { BitmapFont } from 'cc';
+
 const gui = new dat.GUI();
 const fontManager = gui.addFolder('Font Manager');
 
